@@ -3,8 +3,8 @@ from datetime import date
 from enum import Enum
 
 class UserGender(Enum):
-    male = "male",
-    female = "female",
+    male = "male"
+    female = "female"
     other = "other"
 
 class User(SQLModel,table = True):
@@ -15,9 +15,10 @@ class User(SQLModel,table = True):
     birthdate: date
     address: str
     gender: UserGender
-    email:str 
-    password:str
-    phonenumber:str
-    isadmin:bool
+    email:str = Field(unique=True)
+    hashedpassword:str
+    phonenumber:str = Field(unique=True)
+    isadmin:bool = False
     imageurl:str | None = None
 
+ 
