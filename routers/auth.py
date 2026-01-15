@@ -4,7 +4,7 @@ from sqlmodel import Session, select
 from db import engine
 from models.user import User
 from schemas.user import NewUser, LoginData
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import  Response
 import jwt
 import os
 from datetime import datetime, timedelta, timezone

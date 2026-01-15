@@ -1,7 +1,7 @@
 from sqlmodel import SQLModel,Field
 from datetime import date,datetime
 from enum import Enum
-from typing import Annotated
+
 
 class ListingTypes(str,Enum):
     service='שירות'

@@ -4,7 +4,6 @@ from auth_helper import get_user
 from db import engine
 from models.category import Category
 from models.lesting import Listing
-from schemas.lesting import listing
 from schemas.category import category
 
 router = APIRouter()
