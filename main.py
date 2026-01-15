@@ -2,15 +2,18 @@ from fastapi import FastAPI,Request
 from routers.user import router as userRouter
 from routers.lesting import router as lestingRouter
 from routers.category import router as categoryRouter
+from routers.auth import router as authRouter
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 
+load_dotenv()
 app = FastAPI()
 
 apiKey="123456789apikeysecure"
 
 app.add_middleware(CORSMiddleware, 
-                   allow_origins=["http://localhost:5173"],
+                   allow_origins=["http://localhost:5174","http://localhost:5173"],
                    allow_credentials = True, 
                    allow_methods = ["*"],
                    allow_headers=["*"]
@@ -32,3 +35,5 @@ def getMain():
 app.include_router(userRouter, prefix="/api/user", tags=["user"])
 app.include_router(lestingRouter, prefix="/api/listing", tags=["listing"])
 app.include_router(categoryRouter,prefix="/api/category", tags=["category"])
+app.include_router(authRouter,prefix="/api/auth", tags=["auth"])
+
