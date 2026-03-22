@@ -6,13 +6,14 @@ from typing import Optional, List
 from models.lesting import Listing
 from models.user import User
 from schemas.lesting import listing, ListingUpdate
+from sqlalchemy import func
 import boto3
 import uuid
+import math
 from auth_helper import get_user
 
 
 router = APIRouter()
-# userId:int = Depends(get_user)
 
 
 @router.get("/")
@@ -36,22 +37,33 @@ def getListingsWithTheUserData(
             statement = statement.where(Listing.categoryid.in_(categories))
         statement = statement.offset(offset=offset).limit(page_size)
         result = session.exec(statement).all()
-        return [
-            {
-                **listing.model_dump(),
-                "user": {"address": user.address, "name": user.firstname},
-            }
-            for listing, user in result
-        ]
+        count_statement = select(func.count()).select_from(Listing)
+        if categories:
+            count_statement = count_statement.where(Listing.categoryid.in_(categories))
+
+        count = session.exec(count_statement).one()
+
+        page_numbers = math.ceil(count / page_size)
+        return {
+            "result": [
+                {
+                    **listing.model_dump(),
+                    "user": {"address": user.address, "name": user.firstname},
+                }
+                for listing, user in result
+            ],
+            "page_numbers": page_numbers,
+        }
 
 
 @router.get("/withoutMine")
 def getListingsWithoutMine(
-    userId: int = Depends(get_user),
+    userObj: int = Depends(get_user),
     page: int = Query(default=1),
     page_size: int = Query(default=6),
     categories: Optional[List[int]] = Query(default=None),
 ):
+    userId = userObj["id"]
     offset = (page - 1) * page_size
     with Session(engine) as session:
         statement = (
@@ -63,20 +75,29 @@ def getListingsWithoutMine(
             statement = statement.where(Listing.categoryid.in_(categories))
         statement = statement.offset(offset=offset).limit(page_size)
         result = session.exec(statement).all()
-        return [
+        
+        count_statement = select(func.count()).select_from(Listing)
+        if categories:
+            count_statement = count_statement.where(Listing.categoryid.in_(categories))
+
+        count = session.exec(count_statement).one()
+
+        page_numbers = math.ceil(count / page_size)
+        return {"result":[
             {
                 **listing.model_dump(),
                 "user": {"address": user.address, "name": user.firstname},
             }
             for listing, user in result
-        ]
+        ], "page_numbers": page_numbers}
 
 
 @router.get("/get/my")
 def get_my_listings(
-    userId: int = Depends(get_user),
+    userObj: int = Depends(get_user),
     categoryId: int | None = None,
 ):
+    userId = userObj["id"]
     with Session(engine) as session:
         statement = select(Listing).where(Listing.userid == userId)
         if categoryId:
@@ -95,7 +116,7 @@ def getLestingsById(listing_id: int):
 
 
 @router.post("/")
-def createListing(listing_req: listing, userId: int = Depends(get_user)):
+def createListing(listing_req: listing, user= Depends(get_user)):
     with Session(engine) as session:
         listing_dict = listing_req.model_dump()
         print(listing_dict)
@@ -124,7 +145,7 @@ def uploadImage(image_file: UploadFile = File()):
 
 @router.put("/{id}")
 def update_listing(
-    id: int, listingUpdate: ListingUpdate, userId: int = Depends(get_user)
+    id: int, listingUpdate: ListingUpdate, user = Depends(get_user)
 ):
     with Session(engine) as session:
         listingUpdate_dict = listingUpdate.model_dump(exclude_none=True)
@@ -141,7 +162,7 @@ def update_listing(
 
 
 @router.delete("/{id}")
-def delete_listing(id: int, userId: int = Depends(get_user)):
+def delete_listing(id: int, user = Depends(get_user)):
     with Session(engine) as session:
         listing_to_delete = session.get(Listing, id)
         if not listing_to_delete:

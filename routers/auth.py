@@ -49,7 +49,7 @@ def uploadImage(image_file: UploadFile = File()):
 def createToken(user: User):
     secret_key = os.getenv("JWT_SECRET")
     expire = datetime.now(timezone.utc) + timedelta(days=1)
-    payload = {"userId": user.id, "exp": expire}
+    payload = {"userId": user.id, "exp": expire, "isAdmin":user.isadmin}
     jwtToken = jwt.encode(payload, secret_key, "HS256")
     return jwtToken
 
@@ -63,28 +63,25 @@ def logIn(login_req: LoginData, response: Response):
         if user is None:
             raise HTTPException(status_code=401, detail="Invalid email or password")
         is_password_match = password_hash.verify(
-            login_req_dict["password"], user.hashedpassword
-        )
+            login_req_dict["password"], user.hashedpassword)
         if not is_password_match:
             raise HTTPException(status_code=401, detail="Invalid email or password")
         token = createToken(user)
         response.set_cookie(
-            key="access_token", value=token, httponly=True, samesite="lax", secure=False
-        )
-        print("token:", token)
-        print("response:", response)
+            key="access_token", value=token, httponly=True, samesite="lax", secure=False)
         return user.id
 
 
 @router.post("/logout")
-def logout(response: Response, userId: int = Depends(get_user)):
+def logout(response: Response, userObj= Depends(get_user)):
     response.delete_cookie(key="access_token", path="/")
     return {"message": "Logged out successfully"}
 
 
 @router.get("/me")
-def getUserProfile(userId: int = Depends(get_user)):
+def getUserProfile(userObj= Depends(get_user)):
     with Session(engine) as session:
+        userId = userObj["id"]
         user = session.get(User, userId)
         if not user:
             raise HTTPException(status_code=404, detail="This listing does not exist")

@@ -9,7 +9,7 @@ from auth_helper import get_user
 router = APIRouter()
 
 @router.get("/")
-def getUsers(userId: int = Depends(get_user)):
+def getUsers(user = Depends(get_user)):
     with Session(engine) as session:
         statement = select(User)
         response = session.exec(statement).all()
